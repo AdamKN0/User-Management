@@ -4,7 +4,7 @@ init:
 	npm init -y
 
 install:
-	npm install express validator bcrypt dotenv
+	npm install express validator bcrypt dotenv nodemailer
 
 run:
 	npm start
