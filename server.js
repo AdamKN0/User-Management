@@ -12,11 +12,13 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 5000;
-const HOST = process.env.HOST || 'localhost';
+const PORT = process.env.PORT;
+const HOST = process.env.HOST;
 const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    console.error("JWT_SECRET is not set in the environment variables. Please set it in your .env file.");
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
+
+if (!PORT || !HOST || !JWT_SECRET || !JWT_EXPIRATION) {
+    console.error("❌ Missing required environment variables. Please set PORT, HOST, JWT_SECRET, and JWT_EXPIRATION in your .env file.");
     process.exit(1);
 }
 const DB_F = path.join(__dirname, 'db.json');
@@ -70,18 +72,6 @@ const isPasswordMatch = (password, confirmPassword) => {
         return "Passwords do not match. Please try again.";
     return null;
 };
-
-// ADD JWT MIDDLEWARE HERE FOR PROTECTED ROUTES
-// const authenticateToken = (req, res, next) => {
-//     const authHeader = req.headers['authorization'];
-//     const token = authHeader && authHeader.split(' ')[1];
-//     if (!token) return res.status(401).json({ error: 'Access token required' });
-//     jwt.verify(token, JWT_SECRET, (err, user) => {
-//         if (err) return res.status(403).json({ error: 'Invalid token' });
-//         req.user = user;
-//         next();
-//     });
-// };
 
 app.post("/register", async (req, res) => {
     try {
@@ -157,14 +147,13 @@ app.post('/login', async (req, res) => {
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid)
             return res.status(401).json({ error: "Invalid password. Please try again." });
-        
-        // ADD JWT TOKEN GENERATION HERE
-        // const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
-        
+        const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
+        if (!token)
+            return res.status(500).json({ error: "Failed to generate authentication token. Please try again later." }); 
+        console.log(token);
         res.status(200).json({
-            message: "Login successful!"
-            // ADD TOKEN TO RESPONSE HERE
-            // token: token
+            message: "Login successful!",
+            token: token
         });
     } catch (error) {
         console.error("Login error:", error);
