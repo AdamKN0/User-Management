@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -13,6 +14,11 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || 'localhost';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error("JWT_SECRET is not set in the environment variables. Please set it in your .env file.");
+    process.exit(1);
+}
 const DB_F = path.join(__dirname, 'db.json');
 
 const read_db = () => JSON.parse(fs.readFileSync(DB_F, 'utf8'));
@@ -64,6 +70,18 @@ const isPasswordMatch = (password, confirmPassword) => {
         return "Passwords do not match. Please try again.";
     return null;
 };
+
+// ADD JWT MIDDLEWARE HERE FOR PROTECTED ROUTES
+// const authenticateToken = (req, res, next) => {
+//     const authHeader = req.headers['authorization'];
+//     const token = authHeader && authHeader.split(' ')[1];
+//     if (!token) return res.status(401).json({ error: 'Access token required' });
+//     jwt.verify(token, JWT_SECRET, (err, user) => {
+//         if (err) return res.status(403).json({ error: 'Invalid token' });
+//         req.user = user;
+//         next();
+//     });
+// };
 
 app.post("/register", async (req, res) => {
     try {
@@ -120,6 +138,40 @@ app.post("/register", async (req, res) => {
         res.status(500).json({ error: "Something went wrong on our side. Please try again later." });
     }
 });
+
+app.post('/login', async (req, res) => {
+    try {
+        const { identifier, password } = req.body;
+
+        if (!identifier || !password)
+            return res.status(400).json({ error: "Email or username and password are required." });
+
+        const users = read_db();
+        let user;
+        if (validator.isEmail(identifier))
+            user = users.find(u => u.email === validator.normalizeEmail(identifier));
+        else
+            user = users.find(u => u.name.toLowerCase() === validator.trim(identifier).toLowerCase());
+        if (!user)
+            return res.status(404).json({ error: "User not found. Please check your email or username." });
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid)
+            return res.status(401).json({ error: "Invalid password. Please try again." });
+        
+        // ADD JWT TOKEN GENERATION HERE
+        // const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+        
+        res.status(200).json({
+            message: "Login successful!"
+            // ADD TOKEN TO RESPONSE HERE
+            // token: token
+        });
+    } catch (error) {
+        console.error("Login error:", error);
+        res.status(500).json({ error: "Something went wrong on our side. Please try again later." });
+    }
+});
+
 
 app.listen(PORT, HOST, () => {
     console.log(`✅ Server is running at http://${HOST}:${PORT}`);
