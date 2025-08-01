@@ -17,6 +17,7 @@ const DB_F = path.join(__dirname, 'db.json');
 
 const read_db = () => JSON.parse(fs.readFileSync(DB_F, 'utf8'));
 const write_db = data => fs.writeFileSync(DB_F, JSON.stringify(data, null, 2));
+const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 if (!fs.existsSync(DB_F))
     write_db([]);
@@ -92,12 +93,17 @@ app.post("/register", async (req, res) => {
             return res.status(400).json({ error: "This username is already taken. Please choose a different name." });
 
         const hashedPassword = await bcrypt.hash(password, 10);
-
+        if (!hashedPassword)
+            return res.status(500).json({ error: "Failed to hash password. Please try again later." });
+        
         const newUser = {
             id: crypto.randomUUID(),
             name: validator.trim(name),
             email: normalizedEmail,
             password: hashedPassword,
+            role: "user",
+            verificationCode: generateVerificationCode(),
+            verificationCodeExpires: Date.now() + 20 * 60 * 1000,
             isVerified: false,
             createdAt: new Date().toISOString()
         };
@@ -111,42 +117,6 @@ app.post("/register", async (req, res) => {
         });
     } catch (error) {
         console.error("Registration error:", error);
-        res.status(500).json({ error: "Something went wrong on our side. Please try again later." });
-    }
-});
-
-app.post("/login", async (req, res) => {
-    try {
-        const { identifier, password } = req.body;
-
-        if (!identifier || !password)
-            return res.status(400).json({ error: "Please provide both your username/email and password." });
-
-        const users = read_db();
-
-        let user;
-        if (validator.isEmail(identifier)) {
-            const normalizedEmail = validator.normalizeEmail(identifier);
-            user = users.find(u => u.email === normalizedEmail);
-        } else {
-            const normalizedName = validator.trim(identifier).toLowerCase();
-            user = users.find(u => u.name.toLowerCase() === normalizedName);
-        }
-
-        if (!user)
-            return res.status(400).json({ error: "No account found with the provided username/email." });
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch)
-            return res.status(400).json({ error: "Incorrect password. Please try again." });
-
-        res.status(200).json({
-            message: "Login successful! Welcome back.",
-            user: { id: user.id, name: user.name, email: user.email }
-        });
-
-    } catch (error) {
-        console.error("Login error:", error);
         res.status(500).json({ error: "Something went wrong on our side. Please try again later." });
     }
 });
