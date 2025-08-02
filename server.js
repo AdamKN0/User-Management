@@ -34,10 +34,25 @@ const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     if (!authHeader)
         return res.status(401).json({ error: "Authorization header is missing." });
+
     const token = authHeader.split(' ')[1];
     if (!token)
         return res.status(401).json({ error: "Token is missing." });
-    console.log(token);
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        console.error("Token verification error:", error);
+        return res.status(403).json({ error: "Invalid or expired token." });
+    }
+};
+
+const authorizeAdmin = (req, res, next) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admins only." });
+    }
     next();
 };
 
@@ -83,7 +98,6 @@ const isPasswordMatch = (password, confirmPassword) => {
         return "Passwords do not match. Please try again.";
     return null;
 };
-
 
 app.post("/register", async (req, res) => {
     try {
@@ -154,19 +168,30 @@ app.post('/login', async (req, res) => {
             user = users.find(u => u.email === validator.normalizeEmail(identifier));
         else
             user = users.find(u => u.name.toLowerCase() === validator.trim(identifier).toLowerCase());
+
         if (!user)
             return res.status(404).json({ error: "User not found. Please check your email or username." });
+
+        // if (!user.isVerified)
+        //     return res.status(403).json({ error: "Please verify your email before logging in." });
+
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid)
             return res.status(401).json({ error: "Invalid password. Please try again." });
-        const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
+
+        const token = jwt.sign(
+            { userId: user.id, email: user.email, role: user.role },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRATION }
+        );
+
         if (!token)
             return res.status(500).json({ error: "Failed to generate authentication token. Please try again later." });
+        console.log(token);
         res.status(200).json({
             message: "Login successful!",
             token: token
         });
-        console.log(token);
     } catch (error) {
         console.error("Login error:", error);
         res.status(500).json({ error: "Something went wrong on our side. Please try again later." });
@@ -175,7 +200,13 @@ app.post('/login', async (req, res) => {
 
 app.get('/', authenticateToken, (req, res) => {
     res.status(200).json({
-        message: "Welcome to the User Management API! Use /register to create an account and /login to authenticate."
+        message: `Welcome! You are logged in as ${req.user.email}`,
+    });
+});
+
+app.get('/admin', authenticateToken, authorizeAdmin, (req, res) => {
+    res.status(200).json({
+        message: `Hello Admin ${req.user.email}, you have access to this admin route.`,
     });
 });
 
@@ -183,16 +214,19 @@ app.listen(PORT, HOST, () => {
     console.log(`✅ Server is running at http://${HOST}:${PORT}`);
 });
 
-// /register
+
+// register
 // {
 //     "name": "John Doe",
 //     "email": "johndoe@example.com",
-//     "password": "StrongP@ssw0rd!",
-//     "confirmPassword": "StrongP@ssw0rd!"
+//     "password": "StrongP@ssw0rd",
+//     "confirmPassword": "StrongP@ssw0rd"
 // }
 
 // /login
 // {
 //     "identifier": "johndoe@example.com",
-//     "password": "StrongP@ssw0rd!"
+//     "password": "StrongP@ssw0rd"
 // }
+
+// Authorization : Bearer token
