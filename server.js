@@ -16,12 +16,12 @@ const PORT = process.env.PORT;
 const HOST = process.env.HOST;
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
+const DB_F = path.join(__dirname, 'db.json');
 
 if (!PORT || !HOST || !JWT_SECRET || !JWT_EXPIRATION) {
     console.error("❌ Missing required environment variables. Please set PORT, HOST, JWT_SECRET, and JWT_EXPIRATION in your .env file.");
     process.exit(1);
 }
-const DB_F = path.join(__dirname, 'db.json');
 
 const read_db = () => JSON.parse(fs.readFileSync(DB_F, 'utf8'));
 const write_db = data => fs.writeFileSync(DB_F, JSON.stringify(data, null, 2));
@@ -29,6 +29,17 @@ const generateVerificationCode = () => Math.floor(100000 + Math.random() * 90000
 
 if (!fs.existsSync(DB_F))
     write_db([]);
+
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader)
+        return res.status(401).json({ error: "Authorization header is missing." });
+    const token = authHeader.split(' ')[1];
+    if (!token)
+        return res.status(401).json({ error: "Token is missing." });
+    console.log(token);
+    next();
+};
 
 const isValidName = name => {
     if (!name || typeof name !== 'string')
@@ -72,6 +83,7 @@ const isPasswordMatch = (password, confirmPassword) => {
         return "Passwords do not match. Please try again.";
     return null;
 };
+
 
 app.post("/register", async (req, res) => {
     try {
@@ -150,17 +162,37 @@ app.post('/login', async (req, res) => {
         const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
         if (!token)
             return res.status(500).json({ error: "Failed to generate authentication token. Please try again later." });
-        console.log(token);
         res.status(200).json({
             message: "Login successful!",
             token: token
         });
+        console.log(token);
     } catch (error) {
         console.error("Login error:", error);
         res.status(500).json({ error: "Something went wrong on our side. Please try again later." });
     }
 });
 
+app.get('/', authenticateToken, (req, res) => {
+    res.status(200).json({
+        message: "Welcome to the User Management API! Use /register to create an account and /login to authenticate."
+    });
+});
+
 app.listen(PORT, HOST, () => {
     console.log(`✅ Server is running at http://${HOST}:${PORT}`);
 });
+
+// /register
+// {
+//     "name": "John Doe",
+//     "email": "johndoe@example.com",
+//     "password": "StrongP@ssw0rd!",
+//     "confirmPassword": "StrongP@ssw0rd!"
+// }
+
+// /login
+// {
+//     "identifier": "johndoe@example.com",
+//     "password": "StrongP@ssw0rd!"
+// }
