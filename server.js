@@ -103,7 +103,7 @@ app.post("/register", async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         if (!hashedPassword)
             return res.status(500).json({ error: "Failed to hash password. Please try again later." });
-        
+
         const newUser = {
             id: crypto.randomUUID(),
             name: validator.trim(name),
@@ -149,7 +149,7 @@ app.post('/login', async (req, res) => {
             return res.status(401).json({ error: "Invalid password. Please try again." });
         const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
         if (!token)
-            return res.status(500).json({ error: "Failed to generate authentication token. Please try again later." }); 
+            return res.status(500).json({ error: "Failed to generate authentication token. Please try again later." });
         console.log(token);
         res.status(200).json({
             message: "Login successful!",
@@ -160,7 +160,6 @@ app.post('/login', async (req, res) => {
         res.status(500).json({ error: "Something went wrong on our side. Please try again later." });
     }
 });
-
 
 app.listen(PORT, HOST, () => {
     console.log(`✅ Server is running at http://${HOST}:${PORT}`);
