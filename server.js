@@ -27,6 +27,17 @@ const read_db = () => JSON.parse(fs.readFileSync(DB_F, 'utf8'));
 const write_db = data => fs.writeFileSync(DB_F, JSON.stringify(data, null, 2));
 const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+const testAccount =  nodemailer.createTestAccount();
+const transporter = nodemailer.createTransport({
+    host: testAccount.smtp.host,
+    port: testAccount.smtp.port,
+    secure: testAccount.smtp.secure,
+    auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+    },
+});
+
 if (!fs.existsSync(DB_F))
     write_db([]);
 
@@ -98,7 +109,6 @@ const isPasswordMatch = (password, confirmPassword) => {
         return "Passwords do not match. Please try again.";
     return null;
 };
-
 app.post("/register", async (req, res) => {
     try {
         const { name, email, password, confirmPassword } = req.body;
@@ -130,17 +140,32 @@ app.post("/register", async (req, res) => {
         if (!hashedPassword)
             return res.status(500).json({ error: "Failed to hash password. Please try again later." });
 
+        const verificationCode = generateVerificationCode();
+
         const newUser = {
             id: crypto.randomUUID(),
             name: validator.trim(name),
             email: normalizedEmail,
             password: hashedPassword,
             role: "user",
-            verificationCode: generateVerificationCode(),
+            verificationCode,
             verificationCodeExpires: Date.now() + 20 * 60 * 1000,
             isVerified: false,
             createdAt: new Date().toISOString()
         };
+
+        try {
+            const info = await transporter.sendMail({
+                from: 'MyApp <no-reply@myapp.com>',
+                to: normalizedEmail,
+                subject: 'Verify your email',
+                text: `Your verification code is: ${verificationCode}`
+            });
+            console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
+        } catch (emailError) {
+            console.error("Email sending error:", emailError);
+            return res.status(500).json({ error: "Failed to send verification email. Please try again later." });
+        }
 
         users.push(newUser);
         write_db(users);
@@ -172,8 +197,8 @@ app.post('/login', async (req, res) => {
         if (!user)
             return res.status(404).json({ error: "User not found. Please check your email or username." });
 
-        // if (!user.isVerified)
-        //     return res.status(403).json({ error: "Please verify your email before logging in." });
+        if (!user.isVerified)
+            return res.status(403).json({ error: "Please verify your email before logging in." });
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid)
