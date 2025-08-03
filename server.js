@@ -57,7 +57,6 @@ const sendVerificationEmail = async (email, code) => {
     }
 };
 
-
 if (!fs.existsSync(DB_F))
     write_db([]);
 
@@ -129,6 +128,7 @@ const isPasswordMatch = (password, confirmPassword) => {
         return "Passwords do not match. Please try again.";
     return null;
 };
+
 app.post("/register", async (req, res) => {
     try {
         const { name, email, password, confirmPassword } = req.body;
@@ -284,7 +284,7 @@ app.listen(PORT, HOST, () => {
 });
 
 
-// register
+// /register
 // {
 //     "name": "John Doe",
 //     "email": "johndoe@example.com",
@@ -297,5 +297,12 @@ app.listen(PORT, HOST, () => {
 //     "identifier": "johndoe@example.com",
 //     "password": "StrongP@ssw0rd"
 // }
+
+// /verify
+// {
+//     "email": "a@example.com",
+//     "code": "671645"
+// }
+
 
 // Authorization : Bearer token
