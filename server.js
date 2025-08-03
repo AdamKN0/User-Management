@@ -27,16 +27,36 @@ const read_db = () => JSON.parse(fs.readFileSync(DB_F, 'utf8'));
 const write_db = data => fs.writeFileSync(DB_F, JSON.stringify(data, null, 2));
 const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-const testAccount =  nodemailer.createTestAccount();
-const transporter = nodemailer.createTransport({
-    host: testAccount.smtp.host,
-    port: testAccount.smtp.port,
-    secure: testAccount.smtp.secure,
-    auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-    },
-});
+const sendVerificationEmail = async (email, code) => {
+    try {
+        const testAccount = await nodemailer.createTestAccount();
+        const transporter = nodemailer.createTransport({
+            host: testAccount.smtp.host,
+            port: testAccount.smtp.port,
+            secure: testAccount.smtp.secure,
+            auth: {
+                user: testAccount.user,
+                pass: testAccount.pass,
+            },
+        });
+        try {
+            const info = await transporter.sendMail({
+                from: 'MyApp <no-reply@myapp.com>',
+                to: email,
+                subject: 'Verify your email',
+                text: `Your verification code is: ${code}`,
+            });
+            console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
+        } catch (emailError) {
+            console.error("Email sending error:", emailError);
+            return { error: "Failed to send verification email. Please try again later." };
+        }
+    } catch (error) {
+        console.error("Error setting up email transporter:", error);
+        return { error: "Failed to set up email transporter. Please try again later." };
+    }
+};
+
 
 if (!fs.existsSync(DB_F))
     write_db([]);
@@ -154,17 +174,10 @@ app.post("/register", async (req, res) => {
             createdAt: new Date().toISOString()
         };
 
-        try {
-            const info = await transporter.sendMail({
-                from: 'MyApp <no-reply@myapp.com>',
-                to: normalizedEmail,
-                subject: 'Verify your email',
-                text: `Your verification code is: ${verificationCode}`
-            });
-            console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
-        } catch (emailError) {
+        const emailError = await sendVerificationEmail(normalizedEmail, verificationCode);
+        if (emailError) {
             console.error("Email sending error:", emailError);
-            return res.status(500).json({ error: "Failed to send verification email. Please try again later." });
+            return res.status(500).json({ error: emailError.error });
         }
 
         users.push(newUser);
@@ -177,6 +190,37 @@ app.post("/register", async (req, res) => {
     } catch (error) {
         console.error("Registration error:", error);
         res.status(500).json({ error: "Something went wrong on our side. Please try again later." });
+    }
+});
+
+app.post('/verify', async (req, res) => {
+    try {
+        const { email, code } = req.body;
+        if (!code || typeof code !== 'string')
+            return res.status(400).json({ error: "Verification code is required." });
+        if (isValidEmail(email))
+            return res.status(400).json({ error: "Please provide a valid email address." });
+        const normalizedEmail = validator.normalizeEmail(email);
+        const users = read_db();
+        const user = users.find(u => u.email === normalizedEmail);
+        if (!user)
+            return res.status(404).json({ error: "User not found. Please check your email." });
+        if (user.isVerified)
+            return res.status(400).json({ error: "This email is already verified." });
+        if (user.verificationCode !== code)
+            return res.status(400).json({ error: "Invalid verification code. Please try again." });
+        if (user.verificationCodeExpires < Date.now())
+            return res.status(400).json({ error: "Verification code has expired. Please request a new code." });
+        user.isVerified = true;
+        user.verificationCode = null;
+        user.verificationCodeExpires = null;
+        write_db(users);
+        res.status(200).json({
+            message: "Email verification successful! You can now log in."
+        });
+    } catch (error) {
+        console.error("Email verification error:", error);
+        res.status(500).json({ error: "Something went wrong while verifying your email. Please try again later." });
     }
 });
 

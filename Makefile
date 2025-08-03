@@ -10,8 +10,8 @@ run:
 	npm start
 
 clean:
-	rm -f *.json
-	rm -rf node_modules
+	rm -f db.json
+	# rm -rf node_modules
 
 help:
 	@echo "Usage:"
