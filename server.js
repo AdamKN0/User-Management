@@ -182,7 +182,7 @@ app.post("/register", async (req, res) => {
 
         users.push(newUser);
         write_db(users);
-
+        
         res.status(201).json({
             message: "Registration successful! You can now log in.",
             user: { id: newUser.id, name: newUser.name, email: newUser.email }

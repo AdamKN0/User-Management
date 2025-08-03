@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - Premium Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+        }
+
+        .container {
+            background: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 16px;
+            padding: 48px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 40px rgba(212, 175, 55, 0.1);
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #d4af37, #f4d03f);
+            border-radius: 12px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #0a0a0a;
+            font-size: 24px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ffffff, #d4af37);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #a0a0a0;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .email-display {
+            color: #d4af37;
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .code-container {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin: 32px 0;
+        }
+
+        .code-input {
+            width: 56px;
+            height: 56px;
+            background: rgba(40, 40, 40, 0.6);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+            background: rgba(40, 40, 40, 0.8);
+        }
+
+        .code-input.filled {
+            border-color: #d4af37;
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #d4af37, #f4d03f);
+            color: #0a0a0a;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #d4af37;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .resend-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .resend-text {
+            color: #a0a0a0;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .timer {
+            color: #d4af37;
+            font-weight: 500;
+        }
+
+        .footer {
+            margin-top: 32px;
+            font-size: 14px;
+            color: #a0a0a0;
+        }
+
+        .footer a {
+            color: #d4af37;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 32px 24px;
+                margin: 16px;
+            }
+
+            .code-container {
+                gap: 8px;
+            }
+
+            .code-input {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">P</div>
+            <h1>Verify your email</h1>
+            <p class="subtitle">We've sent a 6-digit verification code to</p>
+            <p class="email-display">user@example.com</p>
+        </div>
+
+        <form id="verificationForm">
+            <div class="code-container">
+                <input type="text" class="code-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
+                <input type="text" class="code-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
+                <input type="text" class="code-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
+                <input type="text" class="code-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
+                <input type="text" class="code-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
+                <input type="text" class="code-input" maxlength="1" pattern="[0-9]" inputmode="numeric">
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="verifyBtn" disabled>
+                Verify Email
+            </button>
+        </form>
+
+        <div class="resend-section">
+            <p class="resend-text">
+                Didn't receive the code? You can resend in <span class="timer" id="timer">60</span> seconds
+            </p>
+            <button type="button" class="btn btn-secondary" id="resendBtn" disabled>
+                Resend Code
+            </button>
+        </div>
+
+        <div class="footer">
+            <a href="login.html">← Back to login</a>
+        </div>
+    </div>
+
+    <script>
+        const inputs = document.querySelectorAll('.code-input');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const resendBtn = document.getElementById('resendBtn');
+        const timer = document.getElementById('timer');
+        let timeLeft = 60;
+
+        // Handle input navigation and validation
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value;
+                
+                // Only allow numbers
+                if (!/^\d*$/.test(value)) {
+                    e.target.value = '';
+                    return;
+                }
+
+                // Add filled class
+                if (value) {
+                    e.target.classList.add('filled');
+                    // Move to next input
+                    if (index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                } else {
+                    e.target.classList.remove('filled');
+                }
+
+                // Check if all inputs are filled
+                checkAllInputs();
+            });
+
+            input.addEventListener('keydown', (e) => {
+                // Handle backspace
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    inputs[index - 1].focus();
+                    inputs[index - 1].value = '';
+                    inputs[index - 1].classList.remove('filled');
+                }
+
+                // Handle arrow keys
+                if (e.key === 'ArrowLeft' && index > 0) {
+                    inputs[index - 1].focus();
+                }
+                if (e.key === 'ArrowRight' && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const paste = e.clipboardData.getData('text');
+                const digits = paste.replace(/\D/g, '').slice(0, 6);
+                
+                digits.split('').forEach((digit, i) => {
+                    if (inputs[i]) {
+                        inputs[i].value = digit;
+                        inputs[i].classList.add('filled');
+                    }
+                });
+                
+                checkAllInputs();
+            });
+        });
+
+        function checkAllInputs() {
+            const allFilled = Array.from(inputs).every(input => input.value);
+            verifyBtn.disabled = !allFilled;
+        }
+
+        // Timer countdown
+        function startTimer() {
+            const countdown = setInterval(() => {
+                timeLeft--;
+                timer.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'Resend Code';
+                    timer.parentElement.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        // Start timer on page load
+        startTimer();
+
+        // Handle resend
+        resendBtn.addEventListener('click', () => {
+            timeLeft = 60;
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Code Sent';
+            timer.parentElement.style.display = 'block';
+            timer.textContent = timeLeft;
+            startTimer();
+        });
+
+        // Handle form submission
+        document.getElementById('verificationForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = Array.from(inputs).map(input => input.value).join('');
+            console.log('Verification code:', code);
+            // Handle verification logic here
+        });
+
+        // Focus first input on page load
+        inputs[0].focus();
+    </script>
+</body>
+</html>
